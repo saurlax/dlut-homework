@@ -1,0 +1,1 @@
+G3dOGL.exe a.m -texturemap checker_1k.bmp -key Dt

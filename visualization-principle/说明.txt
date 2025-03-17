@@ -1,0 +1,35 @@
+本文件夹下有四个工程：
+
+basic_example : 曲面三角网格的读入和操作，参考：			https://www.bilibili.com/video/BV14p4y1q7Bm?spm_id_from=333.999.0.0
+
+basic_example_TMesh : 体网格的读入和操作，参考：
+	https://www.bilibili.com/video/BV1rZ4y1T7Cp?spm_id_from=333.999.0.0
+
+basic_opengl : 使用opengl对基本的点边面进行可视化与交互
+
+basic_meshviewer: 融合openGL与半边结构，读入三角网格模型并进行可视化
+
+zzzlib :  源码
+zzzdata : 三维模型文件
+zzzdemo : 工具exe，包括简单的可视化，操作工具，可以直接用里面的exe打开zzzdata里面的三维模型文件
+zzzbin : 工程产生的exe
+
+
+学习要点：
+1，曲面的亏格和边界概念
+2，交互可视化工具G3dOGL.exe、miniMeshViewer.exe和blader.exe的使用（入门示例工程zzzdemo文件夹中）
+3，三角网格元素（点、边、面）的属性（颜色、法向、参数坐标等）在m文件格式中的表示
+4，三角网格元素（点、边、面）的属性（颜色、法向、参数坐标等）在MeshLib半边结构中的表示，如何从文件中读取和保存
+5，参数坐标与纹理贴图原理（vertex uv, Corner uv定义在半边上的uv）
+6，三角网格拓扑操作实现：splitEdge，splitFace, edgeSwap
+7，MeshLib半边结构库的规范使用（继承使用，不更改库代码），工程构建规范
+8，实现拓扑圆盘调和映照代码
+
+任务：
+0，适用现有exe工具打开和编辑三角网格
+1，用visual studio打开三角网格、四面体网格、OpenGL示例性工程，并运行程序；
+2，通读MeshLib半边结构所有源码（尤其是不熟悉C++编程的同学）
+3，读懂TriTopOper.h中的splitEdge，splitFace, edgeSwap代码
+4，实现拓扑圆盘调和映照代码
+5，（选）基于拓扑圆盘调和映照生成四边形网格
+6，（选）拓扑球面的调和映照

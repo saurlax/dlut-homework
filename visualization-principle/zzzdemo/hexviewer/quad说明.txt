@@ -1,0 +1,2 @@
+quad 文件的face 中的vertex index 顺序是逆时针
+和三角网格的一致。
