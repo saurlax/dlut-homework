@@ -1,3 +1,7 @@
 .vscode
 *.exe
 *.out
+
+# Output files
+*.pdf
+*.zip
