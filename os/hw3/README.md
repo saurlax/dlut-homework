@@ -32,3 +32,11 @@ int main(int argc, char *argv[]) {
 Main waits for thread to finish
 Hello world!
 ```
+
+创建 Git 仓库并管理代码：
+
+```bash
+git init
+git add .
+git commit -m "update os hw3"
+```
