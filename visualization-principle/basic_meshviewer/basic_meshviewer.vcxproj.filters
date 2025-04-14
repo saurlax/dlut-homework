@@ -19,4 +19,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\zzzlib\basic_meshviewer\ImpOperS.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\zzzlib\basic_meshviewer\ToolMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\zzzlib\basic_meshviewer\viewerParas.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

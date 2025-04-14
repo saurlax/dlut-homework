@@ -134,6 +134,11 @@
   <ItemGroup>
     <ClCompile Include="..\zzzlib\basic_meshviewer\main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\zzzlib\basic_meshviewer\ImpOperS.h" />
+    <ClInclude Include="..\zzzlib\basic_meshviewer\ToolMesh.h" />
+    <ClInclude Include="..\zzzlib\basic_meshviewer\viewerParas.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
