@@ -1,0 +1,11 @@
+[package]
+name = "lab2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+eframe = "0.31.1"
+egui = "0.31.1"
+egui_graphs = "0.25.0"
+petgraph = "0.8.1"
+rand = "0.9.1"
