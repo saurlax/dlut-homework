@@ -1,9 +1,7 @@
 use eframe::egui;
 use petgraph::{
-    algo::{dijkstra, is_cyclic_directed},
-    graph::{DiGraph, Graph, NodeIndex, UnGraph},
+    graph::{DiGraph, Graph, NodeIndex},
     visit::EdgeRef,
-    Undirected,
 };
 use rand::Rng;
 use std::collections::HashMap;
@@ -20,6 +18,7 @@ struct GraphVisualizer<N: Debug, E: Display> {
     next_pos: egui::Pos2,
     zoom: f32,
     pan_offset: egui::Vec2,
+    is_directed: bool,
 }
 
 impl<N: Debug, E: Display> GraphVisualizer<N, E> {
@@ -30,16 +29,13 @@ impl<N: Debug, E: Display> GraphVisualizer<N, E> {
             next_pos: egui::pos2(100.0, 100.0),
             zoom: 1.0,
             pan_offset: egui::Vec2::ZERO,
+            is_directed: true,
         }
     }
 
     fn reset(&mut self, directed: bool) {
-        if directed {
-            self.graph = DiGraph::new();
-        } else {
-            self.graph = DiGraph::new();
-            // For undirected behavior, add edges in both directions
-        }
+        self.graph = DiGraph::new();
+        self.is_directed = directed;
         self.node_visuals.clear();
         self.next_pos = egui::pos2(100.0, 100.0);
     }
@@ -66,18 +62,16 @@ impl<N: Debug, E: Display> GraphVisualizer<N, E> {
         node_idx
     }
 
-    fn add_edge(&mut self, from: NodeIndex, to: NodeIndex, weight: E) -> Option<petgraph::graph::EdgeIndex> {
-        Some(self.graph.add_edge(from, to, weight))
-    }
-
-    fn node_at_pos(&self, pos: egui::Pos2, radius: f32) -> Option<NodeIndex> {
-        for (idx, visual) in &self.node_visuals {
-            let screen_pos = visual.pos * self.zoom + self.pan_offset;
-            if (screen_pos - pos).length() <= radius {
-                return Some(*idx);
-            }
+    fn add_edge(&mut self, from: NodeIndex, to: NodeIndex, weight: E) -> Option<petgraph::graph::EdgeIndex> 
+    where E: Clone {
+        let edge = self.graph.add_edge(from, to, weight.clone());
+        
+        // For undirected graph, add reverse edge
+        if (!self.is_directed) {
+            self.graph.add_edge(to, from, weight);
         }
-        None
+        
+        Some(edge)
     }
 
     fn apply_force_layout(&mut self, iterations: usize) {
@@ -183,7 +177,7 @@ impl<N: Debug, E: Display> GraphVisualizer<N, E> {
                     painter.line_segment([start_pos, end_pos], stroke);
                     
                     // Draw arrow for directed graph
-                    if self.graph.is_directed() {
+                    if self.is_directed {
                         let direction = (end_pos - start_pos).normalized();
                         let normal = egui::vec2(-direction.y, direction.x);
                         let arrow_size = 10.0;
@@ -277,7 +271,6 @@ struct GraphApp {
     edge_weight: f32,
     selected_from: Option<NodeIndex>,
     selected_to: Option<NodeIndex>,
-    algorithm_result: String,
     is_directed: bool,
 }
 
@@ -289,7 +282,6 @@ impl GraphApp {
             edge_weight: 1.0,
             selected_from: None,
             selected_to: None,
-            algorithm_result: String::new(),
             is_directed: true,
         }
     }
@@ -298,18 +290,17 @@ impl GraphApp {
         self.graph.reset(self.is_directed);
         self.selected_from = None;
         self.selected_to = None;
-        self.algorithm_result = String::new();
     }
 
-    fn create_random_graph(&mut self, nodes: usize, edge_probability: f64) {
+    fn create_random_graph(&mut self) {
         self.reset_graph();
         
         let mut rng = rand::thread_rng();
         
-        // Create nodes
+        // Create 5 nodes
         let mut indices = Vec::new();
-        for i in 0..nodes {
-            let node_name = format!("Node {}", i);
+        for i in 0..5 {
+            let node_name = format!("Node {}", i+1);
             let idx = self.graph.add_node(node_name);
             indices.push(idx);
         }
@@ -317,58 +308,26 @@ impl GraphApp {
         // Randomly create edges
         for &i in &indices {
             for &j in &indices {
-                if i != j && rng.gen_bool(edge_probability) {
+                if i != j && rng.gen_bool(0.3) {
                     let weight = rng.gen_range(1.0..10.0);
                     self.graph.add_edge(i, j, weight);
                 }
             }
         }
         
-        // Apply auto-layout
+        // Apply force-directed layout
         self.graph.apply_force_layout(50);
-    }
-
-    fn run_dijkstra(&mut self) {
-        if let (Some(start), Some(end)) = (self.selected_from, self.selected_to) {
-            // Run Dijkstra's shortest path algorithm
-            let node_map = dijkstra(&self.graph.graph, start, Some(end), |e| *e.weight());
-            
-            // Update result display
-            if let Some(distance) = node_map.get(&end) {
-                self.algorithm_result = format!("Shortest path from {:?} to {:?}: {}", 
-                    self.graph.graph.node_weight(start), 
-                    self.graph.graph.node_weight(end), 
-                    distance);
-            } else {
-                self.algorithm_result = "No path found!".to_string();
-            }
-        } else {
-            self.algorithm_result = "Please select start and end nodes first!".to_string();
-        }
-    }
-
-    fn check_cycles(&mut self) {
-        // Check for cycles in the graph
-        if self.is_directed {
-            if is_cyclic_directed(&self.graph.graph) {
-                self.algorithm_result = "Graph contains cycles".to_string();
-            } else {
-                self.algorithm_result = "Graph does not contain cycles".to_string();
-            }
-        } else {
-            self.algorithm_result = "Undirected graphs always contain cycles (unless it's a tree)".to_string();
-        }
     }
 }
 
 impl eframe::App for GraphApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Side panel for controls
+        // Left control panel
         egui::SidePanel::left("control_panel").min_width(250.0).show(ctx, |ui| {
             ui.heading("Graph Control Panel");
             ui.separator();
             
-            // Graph type controls
+            // Graph type control
             let old_directed = self.is_directed;
             ui.checkbox(&mut self.is_directed, "Directed Graph");
             if old_directed != self.is_directed && ui.button("Apply Graph Type").clicked() {
@@ -387,19 +346,11 @@ impl eframe::App for GraphApp {
             ui.separator();
             ui.heading("Random Graph Generation");
             
-            if ui.button("Small Graph (5 nodes)").clicked() {
-                self.create_random_graph(5, 0.3);
+            if ui.button("Generate 5-Node Graph").clicked() {
+                self.create_random_graph();
             }
             
-            if ui.button("Medium Graph (10 nodes)").clicked() {
-                self.create_random_graph(10, 0.2);
-            }
-            
-            if ui.button("Large Graph (20 nodes)").clicked() {
-                self.create_random_graph(20, 0.1);
-            }
-            
-            // Node addition controls
+            // Add node controls
             ui.separator();
             ui.heading("Add Node");
             
@@ -413,7 +364,7 @@ impl eframe::App for GraphApp {
                 self.node_name.clear();
             }
             
-            // Edge addition controls
+            // Add edge controls
             ui.separator();
             ui.heading("Add Edge");
             
@@ -434,7 +385,7 @@ impl eframe::App for GraphApp {
                     }
                 });
             
-            // Target node selection    
+            // Target node selection
             ui.label("Select Target Node:");
             egui::ComboBox::new("to_node", "Select Target Node")
                 .selected_text(match self.selected_to {
@@ -462,30 +413,13 @@ impl eframe::App for GraphApp {
                     self.graph.add_edge(from, to, self.edge_weight);
                 }
             }
-            
-            // Algorithm controls
-            ui.separator();
-            ui.heading("Algorithms");
-            
-            if ui.button("Run Dijkstra's Algorithm").clicked() {
-                self.run_dijkstra();
-            }
-            
-            if ui.button("Check for Cycles").clicked() {
-                self.check_cycles();
-            }
-            
-            // Algorithm results
-            ui.separator();
-            ui.heading("Algorithm Results");
-            ui.label(&self.algorithm_result);
         });
         
         // Main panel for graph visualization
         egui::CentralPanel::default().show(ctx, |ui| {
             // Draw graph and handle interactions
             if let Some(clicked_node) = self.graph.draw(ui, self.selected_from) {
-                // Handle node selection logic
+                // Node selection logic
                 if self.selected_from.is_none() {
                     self.selected_from = Some(clicked_node);
                 } else if self.selected_to.is_none() && self.selected_from != Some(clicked_node) {
@@ -504,12 +438,12 @@ impl eframe::App for GraphApp {
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1200.0, 800.0]),
+            .with_inner_size([1000.0, 700.0]),
         ..Default::default()
     };
     
     eframe::run_native(
-        "Graph Visualization and Algorithm Demo",
+        "Graph Visualization Demo",
         options,
         Box::new(|cc| Ok(Box::new(GraphApp::new(cc)))),
     )
