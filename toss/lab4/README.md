@@ -1,5 +1,9 @@
 # chatbot
 
+文浩然-20232241392-软 2305
+
+仓库地址：https://github.com/saurlax/dlut-homework/tree/main/toss/lab4
+
 ## Setup
 
 ```bash
@@ -13,8 +17,6 @@ cargo run
 经过分析发现，RocksDB 后端需要编译大量的原生 C++代码，而 Windows 环境下的构建工具链配置复杂，容易出现兼容性问题。为了解决这一问题，我将数据库后端从 `kv-rocksdb` 迁移到了 `kv-mem` 内存数据库。这种迁移避免了原生代码编译的复杂性，虽然数据不会持久化到磁盘，但对于实验验证和演示目的来说是充分的。修改后的配置在 Cargo.toml 中体现为：`surrealdb = { version = "1.0.0", features = ["kv-mem"] }`。
 
 项目需要从 HuggingFace Hub 下载预训练模型，包括 BERT 嵌入模型（BAAI/bge-small-en-v1.5）和 Phi-2 语言模型（Demonthos/dolphin-2_6-phi-2-candle）。在国内网络环境下，直接访问 HuggingFace 经常出现连接超时或下载中断的问题。
-
-为了解决网络访问问题，我配置了 TUN 模式的全局代理。TUN 代理通过创建虚拟网络接口，在网络层面拦截所有流量并通过代理服务器转发，相比传统的 HTTP 代理具有更好的兼容性和稳定性。通过 TUN 代理，成功解决了模型下载过程中的网络连接问题，确保了项目依赖的机器学习模型能够正常获取。
 
 在集成 Candle 机器学习框架的过程中，发现了一些 API 变化导致的编译错误。主要包括：
 
