@@ -75,6 +75,25 @@ impl eframe::App for GraphApp {
                 self.graph.apply_force_layout(50);
             }
             
+            // Zoom controls
+            ui.separator();
+            ui.heading("View Controls");
+            
+            ui.horizontal(|ui| {
+                if ui.button("Zoom In").clicked() {
+                    self.graph.zoom_in();
+                }
+                if ui.button("Zoom Out").clicked() {
+                    self.graph.zoom_out();
+                }
+                if ui.button("Reset View").clicked() {
+                    self.graph.reset_view();
+                }
+            });
+            
+            ui.label(format!("Zoom: {:.1}%", self.graph.get_zoom() * 100.0));
+            ui.label("Tip: Use mouse wheel to zoom");
+            
             ui.separator();
             ui.heading("Random Graph Generation");
             

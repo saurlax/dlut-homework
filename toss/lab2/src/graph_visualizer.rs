@@ -138,12 +138,43 @@ impl<N: Debug, E: Display> GraphVisualizer<N, E> {
         }
     }
 
+    pub fn get_zoom(&self) -> f32 {
+        self.zoom
+    }
+
+    pub fn set_zoom(&mut self, zoom: f32) {
+        self.zoom = zoom.clamp(0.1, 5.0);
+    }
+
+    pub fn zoom_in(&mut self) {
+        self.zoom = (self.zoom * 1.2).min(5.0);
+    }
+
+    pub fn zoom_out(&mut self) {
+        self.zoom = (self.zoom / 1.2).max(0.1);
+    }
+
+    pub fn reset_view(&mut self) {
+        self.zoom = 1.0;
+        self.pan_offset = egui::Vec2::ZERO;
+    }
+
     pub fn draw(&mut self, ui: &mut egui::Ui, selected_node: Option<NodeIndex>) -> Option<NodeIndex> {
         let (response, painter) = ui.allocate_painter(ui.available_size(), egui::Sense::click_and_drag());
         let mut clicked_node = None;
         
+        // Handle canvas panning
         if response.dragged() {
             self.pan_offset += response.drag_delta();
+        }
+        
+        // Handle zoom with mouse wheel
+        if response.hovered() {
+            let scroll_delta = ui.input(|i| i.raw_scroll_delta.y);
+            if scroll_delta != 0.0 {
+                let zoom_factor = 1.0 + scroll_delta * 0.001;
+                self.zoom = (self.zoom * zoom_factor).clamp(0.1, 5.0);
+            }
         }
         
         // Draw edges
