@@ -67,7 +67,7 @@ impl<N: Debug, E: Display> GraphVisualizer<N, E> {
         let edge = self.graph.add_edge(from, to, weight.clone());
         
         // For undirected graph, add reverse edge
-        if (!self.is_directed) {
+        if !self.is_directed {
             self.graph.add_edge(to, from, weight);
         }
         
@@ -295,7 +295,7 @@ impl GraphApp {
     fn create_random_graph(&mut self) {
         self.reset_graph();
         
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         
         // Create 5 nodes
         let mut indices = Vec::new();
@@ -308,8 +308,8 @@ impl GraphApp {
         // Randomly create edges
         for &i in &indices {
             for &j in &indices {
-                if i != j && rng.gen_bool(0.3) {
-                    let weight = rng.gen_range(1.0..10.0);
+                if i != j && rng.random_bool(0.3) {
+                    let weight = rng.random_range(1.0..10.0);
                     self.graph.add_edge(i, j, weight);
                 }
             }
