@@ -1,5 +1,7 @@
 # 虚拟内存页面置换算法模拟
 
+https://github.com/saurlax/dlut-homework/tree/main/os/lab5
+
 20232241392-文浩然-软 2305
 
 ## 实验内容
