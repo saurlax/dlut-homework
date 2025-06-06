@@ -1,0 +1,8 @@
+[package]
+name = "lab5"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.45.1", features = ["full"] }
+clap = "4.5.39"
