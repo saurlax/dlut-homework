@@ -1,17 +1,16 @@
 // MicroC 词法分析器（单遍扫描）
-// 关键字：for(1) if(2) then(3) else(4) while(5) do(6) until(29) int(30) input(31) output(32)
-// ID(10) = letter (letter|digit)*
-// NUM(11) = digit digit*
+// 关键字：for(1) if(2) then(3) else(4) while(5) do(6) until(29) int(30)
+// input(31) output(32) ID(10) = letter (letter|digit)* NUM(11) = digit digit*
 // 运算符/分隔符：
 // ':'(17) ':='(18) '+'(13) '-'(14) '*'(15) '/'(16)
 // '<'(20) '<>'(21) '<='(22) '>'(23) '>='(24) '='(25)
 // ';'(26) '('(27) ')'(28) '#'(0)
 
+#include <cctype>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <unordered_map>
-#include <cctype>
-#include <fstream>
 using namespace std;
 
 int token = -1;
@@ -20,32 +19,21 @@ long long num = 0;
 
 // 关键字表
 static const unordered_map<string, int> keywords = {
-    {"for", 1},
-    {"if", 2},
-    {"then", 3},
-    {"else", 4},
-    {"while", 5},
-    {"do", 6},
-    {"until", 29},
-    {"int", 30},
-    {"input", 31},
-    {"output", 32},
+    {"for", 1}, {"if", 2},     {"then", 3}, {"else", 4},   {"while", 5},
+    {"do", 6},  {"until", 29}, {"int", 30}, {"input", 31}, {"output", 32},
 };
 
-static void lexical(istream &in)
-{
+static void lexical(istream &in) {
   id.clear();
   num = 0;
   token = -1;
 
   // 跳过空白符
-  while (true)
-  {
+  while (true) {
     int ch = in.peek();
     if (ch == EOF)
       return;
-    if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
-    {
+    if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
       in.get();
       continue;
     }
@@ -53,8 +41,7 @@ static void lexical(istream &in)
   }
 
   int c0 = in.peek();
-  if (c0 == EOF)
-  {
+  if (c0 == EOF) {
     // 若无 '#', 以 EOF 作为结束
     token = 0;
     id = "#";
@@ -63,17 +50,13 @@ static void lexical(istream &in)
 
   char c = in.get();
 
-  if (isalpha(c))
-  {
+  if (isalpha(c)) {
     string lex;
     lex.push_back(c);
-    while (true)
-    {
+    while (true) {
       int ch = in.peek();
-      if (ch != EOF)
-      {
-        if (isalpha(ch) || isdigit(ch))
-        {
+      if (ch != EOF) {
+        if (isalpha(ch) || isdigit(ch)) {
           lex.push_back(in.get());
           continue;
         }
@@ -82,30 +65,23 @@ static void lexical(istream &in)
     }
     // 判断是否关键字
     auto it = keywords.find(lex);
-    if (it != keywords.end())
-    {
+    if (it != keywords.end()) {
       token = it->second;
       id = lex;
-    }
-    else
-    {
+    } else {
       token = 10; // ID
       id = lex;
     }
     return;
   }
 
-  if (isdigit(c))
-  {
+  if (isdigit(c)) {
     long long val = c - '0';
-    while (true)
-    {
+    while (true) {
       int ch = in.peek();
-      if (ch != EOF && isdigit(ch))
-      {
+      if (ch != EOF && isdigit(ch)) {
         val = val * 10 + (in.get() - '0');
-      }
-      else
+      } else
         break;
     }
     token = 11; // NUM
@@ -114,8 +90,7 @@ static void lexical(istream &in)
   }
 
   // 运算符/分隔符
-  switch (c)
-  {
+  switch (c) {
   case '+':
     token = 13;
     id = "+";
@@ -152,55 +127,41 @@ static void lexical(istream &in)
     token = 0;
     id = "#";
     return;
-  case ':':
-  {
+  case ':': {
     int ch = in.peek();
-    if (ch == '=')
-    {
+    if (ch == '=') {
       in.get();
       token = 18;
       id = ":=";
-    }
-    else
-    {
+    } else {
       token = 17;
       id = ":";
     }
     return;
   }
-  case '<':
-  {
+  case '<': {
     int ch = in.peek();
-    if (ch == '=')
-    {
+    if (ch == '=') {
       in.get();
       token = 22;
       id = "<=";
-    }
-    else if (ch == '>')
-    {
+    } else if (ch == '>') {
       in.get();
       token = 21;
       id = "<>";
-    }
-    else
-    {
+    } else {
       token = 20;
       id = "<";
     }
     return;
   }
-  case '>':
-  {
+  case '>': {
     int ch = in.peek();
-    if (ch == '=')
-    {
+    if (ch == '=') {
       in.get();
       token = 24;
       id = ">=";
-    }
-    else
-    {
+    } else {
       token = 23;
       id = ">";
     }
@@ -213,28 +174,12 @@ static void lexical(istream &in)
   }
 }
 
-int main(int argc, char *argv[])
-{
-  const char *path = "input.txt";
-  if (argc >= 2)
-  {
-    path = argv[1];
-  }
-
+int main() {
   ifstream fin;
-  fin.open(path, ios::in);
-  if (!fin.is_open())
-  {
-    cerr << "Cannot open file: " << path << "\n";
-    return 1;
-  }
-
-  istream &in = fin;
-  do
-  {
-    lexical(in);
-    switch (token)
-    {
+  fin.open("input.txt", ios::in);
+  do {
+    lexical(fin);
+    switch (token) {
     case 11:
       cout << "(" << token << ", " << num << ")\n";
       break;
