@@ -63,6 +63,7 @@ print(summary(fit_x1_new))
 cat("\n加入新观测后：只用 x2 summary ===\n")
 print(summary(fit_x2_new))
 
+
 # 计算影响度量（杠杆、标准化残差、Cook's distance）
 n_new <- length(y_new)
 p_full <- length(coef(fit_full_new))
