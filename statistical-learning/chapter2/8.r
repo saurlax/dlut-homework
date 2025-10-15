@@ -1,13 +1,9 @@
 # 题 8：College 数据集
 
-# (a) 用 read.csv 读入数据到 R
-college <- read.csv("dataset/College.csv")
-
-# (b) 将第一列院校名设为行名；用 fix() 观察；再删除第 1 列并再次用 fix()
-rownames(college) <- college[, 1]
-fix(college)  # 观察：左侧 row.names 已记录院校名，第 1 列仍是原始院校名
-
-if (!is.factor(college$Private)) college$Private <- factor(college$Private)
+# (a) 从 ISLR 包加载 College 数据集
+library(ISLR)
+data("College")
+college <- College
 
 # (c-i) 使用 summary() 查看整个数据集的汇总统计
 summary(college)

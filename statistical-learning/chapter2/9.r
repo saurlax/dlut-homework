@@ -1,8 +1,5 @@
-# 题 9：Auto 数据集。
-
-# (a) 读取并去缺失，将定性/定量变量区分
-Auto <- read.csv("dataset/Auto.csv", na.strings = "?", stringsAsFactors = FALSE)
-Auto <- na.omit(Auto)
+library(ISLR)
+data("Auto")
 Auto$name   <- factor(Auto$name)
 Auto$origin <- factor(Auto$origin)
 preds <- setdiff(names(Auto), "mpg")
