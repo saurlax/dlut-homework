@@ -16,7 +16,7 @@ boxplot(acceleration ~ mpg01, data=Auto, main="acceleration vs mpg01")
 boxplot(cylinders ~ mpg01, data=Auto, main="cylinders vs mpg01")
 par(mfrow=c(1,1))
 pairs(~ mpg + horsepower + weight + displacement + acceleration, data=Auto,
-      main="pairs plot (相关变量)")
+      main="pairs plot")
 
 # 选择用于预测的变量（可根据 (b) 结果调整）
 preds <- c("horsepower","weight","displacement","acceleration","year","cylinders")
