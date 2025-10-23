@@ -15,7 +15,6 @@ se_analytic <- sd(medv) / sqrt(n)
 # (c) 用自助法(bootstrap)估计均值的标准误
 boot_mean <- boot(medv, statistic = function(x, i) mean(x[i]), R = 2000)
 se_boot_mean <- sd(boot_mean$t)   # bootstrap 标准误
-# 也可用 boot::boot.ci 获得 CI
 ci_boot_mean <- boot.ci(boot_mean, type = c("norm","basic","perc","bca"))
 
 # (d) 用自助法得到的均值 95% 置信区间，并与 t.test 比较

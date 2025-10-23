@@ -1,10 +1,9 @@
-# 依赖包
-if(!require(boot)) install.packages("boot"); library(boot)
+library(boot)
 
 # 1) 用 seed=1 生成模拟数据并画散点
 set.seed(1)
 x <- rnorm(100)
-y <- x - 2*x^2 + rnorm(100)   # 数据生成模型
+y <- x - 2*x^2 + rnorm(100)
 dat <- data.frame(x,y)
 plot(x, y, main="Scatter: x vs y", xlab="x", ylab="y")
 

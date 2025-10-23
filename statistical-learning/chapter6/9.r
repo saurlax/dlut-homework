@@ -45,7 +45,7 @@ print(paste("Lasso lambda.min =", signif(lambda_lasso, 6)))
 print(paste("Lasso test MSE =", round(mse_lasso, 3)))
 print(paste("Number of nonzero coefficients (excluding intercept) =", nz_count))
 
-# (e) PCR（交叉验证选 M），确保选的组件数在 [1, max] 范围内（避免 ncomp() 调用问题）
+# (e) PCR（交叉验证选 M）
 pcr_fit <- pcr(Apps ~ ., data = trainData, scale = TRUE, validation = "CV")
 pcr_msep <- MSEP(pcr_fit, estimate = "CV")
 # 获取 max components 的稳健方式：查看 coef 的第三维度或 scores 列数
@@ -58,7 +58,7 @@ mse_pcr <- mean((y_test - pred_pcr)^2)
 print(paste("PCR selected ncomp =", ncomp_pcr))
 print(paste("PCR test MSE =", round(mse_pcr, 3)))
 
-# (f) PLS（交叉验证选 M），同样处理以避免 ncomp() 问题
+# (f) PLS（交叉验证选 M）
 pls_fit <- plsr(Apps ~ ., data = trainData, scale = TRUE, validation = "CV")
 pls_msep <- MSEP(pls_fit, estimate = "CV")
 max_comp_pls <- if (!is.null(dim(coef(pls_fit)))) dim(coef(pls_fit))[3] else if (!is.null(pls_fit$scores)) ncol(pls_fit$scores) else 1
