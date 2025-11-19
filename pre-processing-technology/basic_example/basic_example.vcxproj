@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\zzzlib\basic_example\Tool.h" />
     <ClInclude Include="..\zzzlib\basic_example\ToolMesh.h" />
+    <ClInclude Include="..\zzzlib\basic_example\TriTopOper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\zzzlib\basic_example\main.cpp" />

@@ -1,10 +1,11 @@
 #ifndef _TOOL_H_
 #define _TOOL_H_
 
-#include<vector>
-#include<math.h>
+#include <vector>
+#include <math.h>
 
 #include "ToolMesh.h"
+#include "TriTopOper.h"
 
 #ifndef PI
 #define PI 3.1415926535
@@ -14,43 +15,53 @@ namespace MeshLib
 {
 	using namespace std;
 
-	template<typename M>
+	template <typename M>
 	class CTool
 	{
 	public:
-		CTool(M* pMesh);
-		~CTool(){};
+		CTool(M *pMesh);
+		~CTool() {};
 
 		void test();
-		void _change_color();
+		void split();
+
 	protected:
-		typename M* m_pMesh;
+		typename M *m_pMesh;
 	};
 
-	template<typename M>
-	CTool<M>::CTool(M* pMesh)
+	template <typename M>
+	CTool<M>::CTool(M *pMesh)
 	{
 		m_pMesh = pMesh;
 	}
 
-	template<typename M>
+	template <typename M>
 	void CTool<M>::test()
 	{
 		cout << "mesh vertex num: " << m_pMesh->numVertices() << endl;
-
 	}
 
-	template<typename M>
-	void CTool<M>::_change_color()
+	template <typename M>
+	void CTool<M>::split()
 	{
-		for (M::MeshVertexIterator mv(m_pMesh); !mv.end(); mv++)
+		vector<M::CFace *> faces;
+		for (M::MeshFaceIterator mf(m_pMesh); !mf.end(); mf++)
 		{
-			M::CVertex* pVertex = mv.value();
-			pVertex->rgb()[0] = 1;
-			pVertex->rgb()[1] = 1;
-			pVertex->rgb()[2] = 0;
+			M::CFace *pFace = mf.value();
+			faces.push_back(pFace);
+		}
+		CTriTopOper<M> triOper(m_pMesh);
+		for (auto face : faces)
+		{
+			M::CFace *pFace = face;
+			cout << "spliting face id: " << pFace->id() << endl;
+			CPoint p = (pFace->halfedge()->source()->point() +
+									pFace->halfedge()->he_next()->source()->point() +
+									pFace->halfedge()->he_next()->he_next()->source()->point()) /
+								 3.0;
+			M::CVertex *pV = triOper.splitFace(pFace);
+			pV->point() = p;
 		}
 	}
-	
 }
 #endif

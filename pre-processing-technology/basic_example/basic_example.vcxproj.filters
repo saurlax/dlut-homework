@@ -21,6 +21,9 @@
     <ClInclude Include="..\zzzlib\basic_example\ToolMesh.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\zzzlib\basic_example\TriTopOper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\zzzlib\basic_example\main.cpp">

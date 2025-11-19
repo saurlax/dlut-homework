@@ -13,12 +13,9 @@ void main(int argc, char** argv)
 	mesh.read_m(argv[1]);
 	CTool<CTMesh> tool(&mesh);
 	tool.test();
-	tool._change_color();
+	tool.split();
 	mesh.write_m(argv[2]);
 
 	cout << "finished !!! press any key to continue!!!" << endl;
 	getchar();
-
-
-
 }

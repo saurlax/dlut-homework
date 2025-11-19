@@ -177,37 +177,9 @@ namespace MeshLib
 		typedef VertexOutHalfedgeIterator<V, E, F, H> VertexOutHalfedgeIterator;
 		typedef VertexInHalfedgeIterator<V, E, F, H> VertexInHalfedgeIterator;
 		typedef FaceEdgeIterator<V, E, F, H> FaceEdgeIterator;
-
+		using CBaseMesh<V, E, F, H>::m_map_face;
 	};
 
 	typedef CToolMesh<CToolVertex, CToolEdge, CToolFace, CToolHalfEdge> CTMesh;
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif

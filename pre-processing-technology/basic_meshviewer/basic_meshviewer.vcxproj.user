@@ -6,7 +6,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>domain25.m</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>eight.m</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>../zzzdata/basic_meshviewer/</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
