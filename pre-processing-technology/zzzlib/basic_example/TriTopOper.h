@@ -1,63 +1,64 @@
 #ifndef _TRI_TOP_OPER_H_
 #define _TRI_TOP_OPER_H_
 
-#include<vector>
-#include<map>
+#include <vector>
+#include <map>
 using namespace std;
 
 namespace MeshLib
 {
-	template<typename M>
+	template <typename M>
 	class CTriTopOper
 	{
 	public:
-		CTriTopOper(M* _mesh);
+		CTriTopOper(M *_mesh);
 		~CTriTopOper();
+
 	public:
 		/* remesh operation */
-		typename M::CVertex* splitFace(typename M::CFace* pFace);
-		typename M::CVertex* splitEdge(typename M::CEdge* pEdge);	
-		typename M::CVertex* addVertexFaceBoundary(typename M::CHalfEdge* phe);
-		typename M::CHalfEdge* addFace2Boundary(typename M::CHalfEdge* phe);
-		void swapEdge(typename M::CEdge* pEdge);
+		typename M::CVertex *splitFace(typename M::CFace *pFace);
+		typename M::CVertex *splitEdge(typename M::CEdge *pEdge);
+		typename M::CVertex *addVertexFaceBoundary(typename M::CHalfEdge *phe);
+		typename M::CHalfEdge *addFace2Boundary(typename M::CHalfEdge *phe);
+		void swapEdge(typename M::CEdge *pEdge);
 
 	protected:
-		void _update_vertex_edges(typename M::CVertex* pVertex);
-		void _attach_halfedge_to_edge(typename M::CHalfEdge* he0, typename M::CHalfEdge* he1, typename M::CEdge* e);
+		void _update_vertex_edges(typename M::CVertex *pVertex);
+		void _attach_halfedge_to_edge(typename M::CHalfEdge *he0, typename M::CHalfEdge *he1, typename M::CEdge *e);
+
 	protected:
-		M* m_pMesh;
+		M *m_pMesh;
 		/* the max id */
 		int m_vertex_id;
 		int m_face_id;
 	};
 
-	template<typename M>
-	CTriTopOper<M>::CTriTopOper(M* _mesh)
+	template <typename M>
+	CTriTopOper<M>::CTriTopOper(M *_mesh)
 	{
 		m_pMesh = _mesh;
 		// compute vertex_id and face_id
 		m_vertex_id = 0;
 		for (M::MeshVertexIterator viter(m_pMesh); !viter.end(); viter++)
 		{
-			if (viter.value()->id() > m_vertex_id) 
+			if (viter.value()->id() > m_vertex_id)
 				m_vertex_id = viter.value()->id();
 		}
 		m_face_id = 0;
 		for (M::MeshFaceIterator fiter(m_pMesh); !fiter.end(); fiter++)
 		{
-			if (fiter.value()->id() > m_face_id) 
+			if (fiter.value()->id() > m_face_id)
 				m_face_id = fiter.value()->id();
 		}
 	}
 
-	template<typename M>
+	template <typename M>
 	CTriTopOper<M>::~CTriTopOper()
 	{
-
 	}
 
-	template<typename M>
-	void CTriTopOper<M>::_attach_halfedge_to_edge(typename M::CHalfEdge* he0, typename M::CHalfEdge* he1, typename M::CEdge* e)
+	template <typename M>
+	void CTriTopOper<M>::_attach_halfedge_to_edge(typename M::CHalfEdge *he0, typename M::CHalfEdge *he1, typename M::CEdge *e)
 	{
 		if (he0 == NULL)
 		{
@@ -81,16 +82,16 @@ namespace MeshLib
 			he1->edge() = e;
 	}
 
-	template<typename M>
-	typename M::CVertex* CTriTopOper<M>::splitFace(typename M::CFace* pFace)
+	template <typename M>
+	typename M::CVertex *CTriTopOper<M>::splitFace(typename M::CFace *pFace)
 	{
-		M::CVertex* pV = m_pMesh->createVertex(++m_vertex_id);
+		M::CVertex *pV = m_pMesh->createVertex(++m_vertex_id);
 
-		M::CVertex* v[3];
-		M::CHalfEdge* h[3];
-		M::CHalfEdge* hs[3];
+		M::CVertex *v[3];
+		M::CHalfEdge *h[3];
+		M::CHalfEdge *hs[3];
 
-		M::CEdge* eg[3];
+		M::CEdge *eg[3];
 
 		h[0] = m_pMesh->faceHalfedge(pFace);
 		h[1] = m_pMesh->faceNextCcwHalfEdge(h[0]);
@@ -103,18 +104,17 @@ namespace MeshLib
 			hs[i] = m_pMesh->halfedgeSym(h[i]);
 		}
 
-
 		// create two new faces using createFace so list/map are updated consistently
-		M::CVertex* fv1[3] = { v[0], v[1], pV };
-		M::CFace* f = m_pMesh->createFace(fv1, ++m_face_id);
-		M::CHalfEdge* hes[3];
+		M::CVertex *fv1[3] = {v[0], v[1], pV};
+		M::CFace *f = m_pMesh->createFace(fv1, ++m_face_id);
+		M::CHalfEdge *hes[3];
 		hes[0] = m_pMesh->faceHalfedge(f);
 		hes[1] = m_pMesh->faceNextCcwHalfEdge(hes[0]);
 		hes[2] = m_pMesh->faceNextCcwHalfEdge(hes[1]);
 
-		M::CVertex* fv2[3] = { pV, v[1], v[2] };
+		M::CVertex *fv2[3] = {pV, v[1], v[2]};
 		f = m_pMesh->createFace(fv2, ++m_face_id);
-		M::CHalfEdge* hes2[3];
+		M::CHalfEdge *hes2[3];
 		hes2[0] = m_pMesh->faceHalfedge(f);
 		hes2[1] = m_pMesh->faceNextCcwHalfEdge(hes2[0]);
 		hes2[2] = m_pMesh->faceNextCcwHalfEdge(hes2[1]);
@@ -124,10 +124,7 @@ namespace MeshLib
 		_attach_halfedge_to_edge(hes[1], hs[1], eg[1]);
 		_attach_halfedge_to_edge(hes2[2], hs[2], eg[2]);
 
-
-
 		pV->halfedge() = h[1];
-
 
 		h[1]->vertex() = pV;
 		h[2]->vertex() = v[2];
@@ -152,15 +149,15 @@ namespace MeshLib
 		return pV;
 	}
 
-	template<typename M>
-	typename M::CVertex* CTriTopOper<M>::splitEdge(typename M::CEdge* pEdge)
+	template <typename M>
+	typename M::CVertex *CTriTopOper<M>::splitEdge(typename M::CEdge *pEdge)
 	{
-		M::CVertex* pV = m_pMesh->createVertex(++m_vertex_id);
+		M::CVertex *pV = m_pMesh->createVertex(++m_vertex_id);
 
-		M::CHalfEdge* h[12];
-		M::CHalfEdge* s[6];
-		M::CVertex* v[6];
-		M::CEdge* eg[6];
+		M::CHalfEdge *h[12];
+		M::CHalfEdge *s[6];
+		M::CVertex *v[6];
+		M::CEdge *eg[6];
 
 		h[0] = m_pMesh->edgeHalfedge(pEdge, 0);
 		h[1] = m_pMesh->faceNextCcwHalfEdge(h[0]);
@@ -170,8 +167,7 @@ namespace MeshLib
 		h[4] = m_pMesh->faceNextCcwHalfEdge(h[3]);
 		h[5] = m_pMesh->faceNextCcwHalfEdge(h[4]);
 
-
-		M::CFace* f[4];
+		M::CFace *f[4];
 		f[0] = m_pMesh->halfedgeFace(h[0]);
 		f[1] = m_pMesh->halfedgeFace(h[3]);
 
@@ -182,19 +178,18 @@ namespace MeshLib
 			s[ii] = m_pMesh->halfedgeSym(h[ii]);
 		}
 
-
 		// create two new faces using createFace so mesh lists/maps and edges are handled
-		M::CVertex* fv2[3] = { v[1], v[2], pV };
+		M::CVertex *fv2[3] = {v[1], v[2], pV};
 		f[2] = m_pMesh->createFace(fv2, ++m_face_id);
 		// new halfedges h[6], h[7], h[8]
 		h[6] = m_pMesh->faceHalfedge(f[2]);
 		h[7] = m_pMesh->faceNextCcwHalfEdge(h[6]);
 		h[8] = m_pMesh->faceNextCcwHalfEdge(h[7]);
 
-		M::CVertex* fv3[3] = { v[2], v[4], pV };
+		M::CVertex *fv3[3] = {v[2], v[4], pV};
 		f[3] = m_pMesh->createFace(fv3, ++m_face_id);
 		// new halfedges h[9], h[10], h[11]
-		h[9]  = m_pMesh->faceHalfedge(f[3]);
+		h[9] = m_pMesh->faceHalfedge(f[3]);
 		h[10] = m_pMesh->faceNextCcwHalfEdge(h[9]);
 		h[11] = m_pMesh->faceNextCcwHalfEdge(h[10]);
 
@@ -205,7 +200,6 @@ namespace MeshLib
 
 		_attach_halfedge_to_edge(h[7], s[2], eg[2]);
 		_attach_halfedge_to_edge(h[10], s[4], eg[4]);
-
 
 		h[0]->vertex() = v[0];
 		h[1]->vertex() = v[1];
@@ -220,8 +214,6 @@ namespace MeshLib
 		h[10]->vertex() = v[4];
 		h[11]->vertex() = pV;
 
-
-
 		v[0]->halfedge() = h[0];
 		v[1]->halfedge() = h[1];
 		v[2]->halfedge() = h[7];
@@ -230,7 +222,7 @@ namespace MeshLib
 
 		for (int k = 0; k < 4; k++)
 		{
-			M::CHalfEdge* pH = m_pMesh->faceHalfedge(f[k]);
+			M::CHalfEdge *pH = m_pMesh->faceHalfedge(f[k]);
 			for (int i = 0; i < 3; i++)
 			{
 				if (pH->he_sym() != NULL)
@@ -247,12 +239,12 @@ namespace MeshLib
 
 		return pV;
 	}
-	
-	template<typename M>
-	void CTriTopOper<M>::swapEdge(typename M::CEdge* pEdge)
+
+	template <typename M>
+	void CTriTopOper<M>::swapEdge(typename M::CEdge *pEdge)
 	{
-		M::CHalfEdge* he_left = static_cast<M::CHalfEdge*>(pEdge->halfedge(0));
-		M::CHalfEdge* he_right = static_cast<M::CHalfEdge*>(pEdge->halfedge(1));
+		M::CHalfEdge *he_left = static_cast<M::CHalfEdge *>(pEdge->halfedge(0));
+		M::CHalfEdge *he_right = static_cast<M::CHalfEdge *>(pEdge->halfedge(1));
 
 		if (he_right == NULL)
 		{
@@ -260,40 +252,39 @@ namespace MeshLib
 			return;
 		}
 
-		M::CVertex* v1 = static_cast<M::CVertex*>(m_pMesh->edgeVertex1(pEdge));
-		M::CVertex* v2 = static_cast<M::CVertex*>(m_pMesh->edgeVertex2(pEdge));
+		M::CVertex *v1 = static_cast<M::CVertex *>(m_pMesh->edgeVertex1(pEdge));
+		M::CVertex *v2 = static_cast<M::CVertex *>(m_pMesh->edgeVertex2(pEdge));
 
 		if (v1 == v2)
 		{
 			std::cerr << "Warning: Ilegal: Loop Edge Swap" << std::endl;
-			//return;
+			// return;
 		}
 
-		M::CHalfEdge* ph[6];
+		M::CHalfEdge *ph[6];
 
 		ph[0] = he_left;
-		ph[1] = static_cast<M::CHalfEdge*>(m_pMesh->faceNextCcwHalfEdge(ph[0]));
-		ph[2] = static_cast<M::CHalfEdge*>(m_pMesh->faceNextCcwHalfEdge(ph[1]));
-
+		ph[1] = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(ph[0]));
+		ph[2] = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(ph[1]));
 
 		ph[3] = he_right;
-		ph[4] = static_cast<M::CHalfEdge*>(m_pMesh->faceNextCcwHalfEdge(ph[3]));
-		ph[5] = static_cast<M::CHalfEdge*>(m_pMesh->faceNextCcwHalfEdge(ph[4]));
+		ph[4] = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(ph[3]));
+		ph[5] = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(ph[4]));
 
-		M::CVertex* pv[4];
+		M::CVertex *pv[4];
 
-		pv[0] = static_cast<M::CVertex*>(m_pMesh->halfedgeTarget(ph[0]));
-		pv[1] = static_cast<M::CVertex*>(m_pMesh->halfedgeTarget(ph[1]));
-		pv[2] = static_cast<M::CVertex*>(m_pMesh->halfedgeTarget(ph[2]));
-		pv[3] = static_cast<M::CVertex*>(m_pMesh->halfedgeTarget(ph[4]));
+		pv[0] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[0]));
+		pv[1] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[1]));
+		pv[2] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[2]));
+		pv[3] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[4]));
 
-		int     pi[6];
-		M::CEdge* ppe[6];
+		int pi[6];
+		M::CEdge *ppe[6];
 
 		for (int i = 0; i < 6; i++)
 		{
-			M::CHalfEdge* he = ph[i];
-			M::CEdge* e = static_cast<M::CEdge*>(m_pMesh->halfedgeEdge(he));
+			M::CHalfEdge *he = ph[i];
+			M::CEdge *e = static_cast<M::CEdge *>(m_pMesh->halfedgeEdge(he));
 			ppe[i] = e;
 
 			if (ppe[i]->halfedge(0) == he)
@@ -307,7 +298,7 @@ namespace MeshLib
 			}
 		}
 
-		//relink the vertices and halfedge
+		// relink the vertices and halfedge
 
 		ph[0]->target() = pv[1];
 		ph[1]->target() = pv[2];
@@ -318,46 +309,12 @@ namespace MeshLib
 
 		for (int i = 0; i < 6; i++)
 		{
-			M::CHalfEdge* h = ph[i];
-			M::CVertex* v = static_cast<M::CVertex*>(m_pMesh->halfedgeTarget(h));
+			M::CHalfEdge *h = ph[i];
+			M::CVertex *v = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(h));
 			v->halfedge() = h;
 		}
 
-		/*
-		// 原始实现（已注释）：同时修改 edge<->halfedge 的对应关系。
-		// 如果你希望边对象也随翻边移动（edge 表示新的对角线），
-		// 取消下面代码的注释即可恢复原行为。
-
-		M::CVertex* v1 = static_cast<M::CVertex*>(m_pMesh->edgeVertex1(pEdge));
-		M::CVertex* v2 = static_cast<M::CVertex*>(m_pMesh->edgeVertex2(pEdge));
-
-		if (v1 == v2)
-		{
-			std::cerr << "Warning: Ilegal: Loop Edge Swap" << std::endl;
-			//return;
-		}
-
-		int     pi[6];
-		M::CEdge* ppe[6];
-
-		for (int i = 0; i < 6; i++)
-		{
-			M::CHalfEdge* he = ph[i];
-			M::CEdge* e = static_cast<M::CEdge*>(m_pMesh->halfedgeEdge(he));
-			ppe[i] = e;
-
-			if (ppe[i]->halfedge(0) == he)
-			{
-				pi[i] = 0;
-			}
-			else
-			{
-				assert(ppe[i]->halfedge(1) == he);
-				pi[i] = 1;
-			}
-		}
-
-		// relink the edge-halfedge pointers (move halfedges between edges)
+		// relink the edge-halfedge pointers
 
 		ph[1]->edge() = ppe[2];
 		ppe[2]->halfedge(pi[2]) = ph[1];
@@ -370,22 +327,21 @@ namespace MeshLib
 
 		ph[5]->edge() = ppe[1];
 		ppe[1]->halfedge(pi[1]) = ph[5];
-		*/
-	}	
-	
-	template<typename M>
-	typename M::CVertex* CTriTopOper<M>::addVertexFaceBoundary(typename M::CHalfEdge* phe)
-	{
-		M::CVertex* pV = m_pMesh->createVertex(++m_vertex_id);
+	}
 
-		M::CFace* f = new M::CFace();
+	template <typename M>
+	typename M::CVertex *CTriTopOper<M>::addVertexFaceBoundary(typename M::CHalfEdge *phe)
+	{
+		M::CVertex *pV = m_pMesh->createVertex(++m_vertex_id);
+
+		M::CFace *f = new M::CFace();
 		f->id() = ++m_face_id;
 		m_pMesh->faces().push_back(f);
-		m_pMesh->map_face().insert(pair<int, M::CFace*>(f->id(), f));
+		m_pMesh->map_face().insert(pair<int, M::CFace *>(f->id(), f));
 
-		M::CHalfEdge* h[3];
-		M::CVertex* v[3];
-		M::CEdge* e[3];
+		M::CHalfEdge *h[3];
+		M::CVertex *v[3];
+		M::CEdge *e[3];
 
 		e[0] = m_pMesh->halfedgeEdge(phe);
 		e[1] = new M::CEdge();
@@ -427,18 +383,18 @@ namespace MeshLib
 		return pV;
 	}
 
-	template<typename M>
-	typename M::CHalfEdge* CTriTopOper<M>::addFace2Boundary(typename M::CHalfEdge* phe)
+	template <typename M>
+	typename M::CHalfEdge *CTriTopOper<M>::addFace2Boundary(typename M::CHalfEdge *phe)
 	{
-		M::CFace* f = new M::CFace();
+		M::CFace *f = new M::CFace();
 		f->id() = ++m_face_id;
 		m_pMesh->faces().push_back(f);
-		m_pMesh->map_face().insert(pair<int, M::CFace*>(f->id(), f));
+		m_pMesh->map_face().insert(pair<int, M::CFace *>(f->id(), f));
 
-		M::CVertex* v[3];
-		M::CHalfEdge* hs[2];
-		M::CHalfEdge* h[3];
-		M::CEdge* e[3];
+		M::CVertex *v[3];
+		M::CHalfEdge *hs[2];
+		M::CHalfEdge *h[3];
+		M::CEdge *e[3];
 
 		v[0] = m_pMesh->halfedgeSource(phe);
 		v[2] = m_pMesh->halfedgeTarget(phe);
@@ -479,14 +435,6 @@ namespace MeshLib
 		return h[1];
 	}
 
-
 }
-
-
-
-
-
-
-
 
 #endif
