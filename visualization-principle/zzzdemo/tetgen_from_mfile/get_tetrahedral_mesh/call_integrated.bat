@@ -1,1 +1,0 @@
-call integrated.bat unit_sphere

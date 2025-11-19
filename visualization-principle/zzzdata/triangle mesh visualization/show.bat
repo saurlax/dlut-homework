@@ -1,1 +1,0 @@
-G3dOGL.exe eight_foli.Quad -key De
