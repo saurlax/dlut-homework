@@ -1,21 +1,16 @@
-#include<iostream>
+#include <iostream>
 
-#include"Tool.h"
-#include"ToolMesh.h"
+#include "Tool.h"
+#include "ToolMesh.h"
 
 using namespace std;
 using namespace MeshLib;
 
-
-void main(int argc, char** argv)
+void main(int argc, char **argv)
 {
 	CTMesh mesh;
-	mesh.read_m(argv[1]);
 	CTool<CTMesh> tool(&mesh);
-	tool.test();
-	tool.split();
+	tool.bilinear_gen(CPoint(0, 0, 1), CPoint(3, 1, 4), CPoint(-3, 1, 5), CPoint(-4, 2, 4));
+	tool._change_color();
 	mesh.write_m(argv[2]);
-
-	cout << "finished !!! press any key to continue!!!" << endl;
-	getchar();
 }
