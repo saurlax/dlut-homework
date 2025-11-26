@@ -29,35 +29,3 @@ v: remove one vertex
 
 3. g3dogl.exe **_uv.m -texturemap check.bmp
 D + t, visualize the texture mapping.
-
-g3dogl的用法:
-
-g3dogl。exe * * 00
-
-1。鼠标:旋转
-鼠标右键:扩展
-鼠标中:翻译
-
-2。D + e:可视化三角
-D + s:展示架
-D + r:改变面对一切正常,内表面
-呈现绿色变成了外面
-
-3所示。2:(隐藏文本)
-
-4所示。r:更新
-
-5。艾凡:硅谷动力编辑状态
-进入编辑模式后,给目标箭头
-边或面或顶点,可以执行以下操作:
-
-t:锋利的边缘
-s:边缘分割
-w:边交换
-f:删除一个面
-v:删除一个顶点
-
-@@:保存修改网格文件
-
-3所示。g3dogl。exe * * _uv。m -texturemap check.bmp
-D + t,可视化纹理映射。

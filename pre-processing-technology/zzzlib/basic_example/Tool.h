@@ -26,6 +26,7 @@ namespace MeshLib
 		void _change_color();
 		void split();
 		void bilinear_gen(CPoint p1, CPoint p2, CPoint p3, CPoint p4);
+		void harmonic_map(int max_iter = 5000, double tol = 1e-6);
 
 	protected:
 		typename M *m_pMesh;
@@ -49,9 +50,7 @@ namespace MeshLib
 		for (M::MeshVertexIterator mv(m_pMesh); !mv.end(); mv++)
 		{
 			M::CVertex *pVertex = mv.value();
-			pVertex->rgb()[0] = 1;
-			pVertex->rgb()[1] = 1;
-			pVertex->rgb()[2] = 0;
+			pVertex->rgb() = {1, 1, 0};
 		}
 	}
 
@@ -105,6 +104,130 @@ namespace MeshLib
 				m_pMesh->createFace(fv1, m_pMesh->numFaces() + 1);
 				M::CVertex *fv2[3] = {vtxs[i][j], vtxs[i + 1][j + 1], vtxs[i][j + 1]};
 				m_pMesh->createFace(fv2, m_pMesh->numFaces() + 1);
+			}
+		}
+		m_pMesh->labelBoundary();
+	}
+
+	template <typename M>
+	void CTool<M>::harmonic_map(int max_iter, double tol)
+	{
+		M::CBoundary boundary(m_pMesh);
+		if (boundary.loops().empty())
+		{
+			std::cerr << "Harmonic map requires an open mesh with boundary." << std::endl;
+			return;
+		}
+
+		// 取长度最大的边界环并按弧长映射到单位圆
+		auto *loop = boundary.loops()[0];
+		std::vector<typename M::CHalfEdge *> hes;
+		hes.reserve(loop->halfedges().size());
+		for (auto he : loop->halfedges())
+		{
+			hes.push_back(he);
+		}
+		if (hes.size() < 3)
+		{
+			std::cerr << "Boundary too small for mapping." << std::endl;
+			return;
+		}
+
+		// 收集边界顶点顺序及边长
+		std::vector<typename M::CVertex *> bverts;
+		bverts.reserve(hes.size());
+		double perimeter = 0.0;
+		std::vector<double> seg_len(hes.size(), 0.0);
+		for (size_t i = 0; i < hes.size(); ++i)
+		{
+			auto he = hes[i];
+			auto vS = m_pMesh->halfedgeSource(he);
+			auto e = m_pMesh->halfedgeEdge(he);
+			double el = m_pMesh->edgeLength(e);
+			seg_len[i] = el;
+			perimeter += el;
+			bverts.push_back(vS);
+		}
+
+		if (perimeter <= 1e-12)
+		{
+			std::cerr << "Boundary perimeter is zero." << std::endl;
+			return;
+		}
+
+		// 边界映射到单位圆，直接修改3D坐标 (x,y,z) = (cos(t), sin(t), 0)
+		double acc = 0.0;
+		for (size_t i = 0; i < bverts.size(); ++i)
+		{
+			if (i > 0)
+				acc += seg_len[i - 1];
+			double t = (acc / perimeter) * 2.0 * PI;
+			double cx = cos(t);
+			double cy = sin(t);
+			bverts[i]->point() = CPoint(cx, cy, 0.0);
+			bverts[i]->boundary() = true;
+		}
+
+		// 初始化内点3D坐标为(0,0,0)
+		std::vector<typename M::CVertex *> interior_vertices;
+		for (typename M::MeshVertexIterator mv(m_pMesh); !mv.end(); mv++)
+		{
+			auto v = mv.value();
+			if (!v->boundary())
+			{
+				v->point() = CPoint(0.0, 0.0, 0.0);
+				interior_vertices.push_back(v);
+			}
+		}
+
+		if (interior_vertices.empty())
+		{
+			return;
+		}
+
+		// 图拉普拉斯迭代：对x,y坐标分别求解调和方程（z始终为0）
+		std::vector<CPoint> next_pos(interior_vertices.size());
+		for (int it = 0; it < max_iter; ++it)
+		{
+			double max_delta = 0.0;
+			for (size_t idx = 0; idx < interior_vertices.size(); ++idx)
+			{
+				auto v = interior_vertices[idx];
+				double sum_x = 0.0, sum_y = 0.0;
+				int deg = 0;
+				for (typename M::VertexVertexIterator vv(v); !vv.end(); vv++)
+				{
+					auto nb = vv.value();
+					sum_x += nb->point()[0];
+					sum_y += nb->point()[1];
+					++deg;
+				}
+				if (deg > 0)
+				{
+					sum_x /= (double)deg;
+					sum_y /= (double)deg;
+				}
+				next_pos[idx] = CPoint(sum_x, sum_y, 0.0);
+			}
+
+			// 应用更新并计算收敛性
+			for (size_t idx = 0; idx < interior_vertices.size(); ++idx)
+			{
+				auto v = interior_vertices[idx];
+				CPoint old_pos = v->point();
+				CPoint new_pos = next_pos[idx];
+				double dx = new_pos[0] - old_pos[0];
+				double dy = new_pos[1] - old_pos[1];
+				double delta = sqrt(dx * dx + dy * dy);
+				if (delta > max_delta)
+					max_delta = delta;
+				v->point() = new_pos;
+			}
+
+			if (max_delta < tol)
+			{
+				std::cout << "Harmonic map converged at iteration " << it << std::endl;
+				break;
 			}
 		}
 	}
