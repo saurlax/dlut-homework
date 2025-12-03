@@ -28,7 +28,7 @@ namespace MeshLib
 		void bilinear_gen(CPoint p1, CPoint p2, CPoint p3, CPoint p4);
 		void harmonic_map(int max_iter = 5000, double tol = 1e-6);
 		void harmonic_map_square(int max_iter = 5000, double tol = 1e-6);
-		void quad_remesh_from_square(int density = 20);
+		M* quad_remesh_from_square(int density = 20);
 
 	protected:
 		typename M *m_pMesh;
@@ -397,8 +397,11 @@ namespace MeshLib
 	}
 
 	template <typename M>
-	void CTool<M>::quad_remesh_from_square(int density)
+	M* CTool<M>::quad_remesh_from_square(int density)
 	{
+		// 创建新的网格
+		M* new_mesh = new M();
+		
 		// m_pMesh是已经过正方形调和映射的网格，顶点的point是2D坐标
 		// 原始3D坐标保存在uv属性和string中
 		
@@ -470,14 +473,16 @@ namespace MeshLib
 					interpolated_3d = param_point; // 使用参数坐标作为默认值
 				}
 				
-				// 创建新顶点，坐标为插值得到的原始3D坐标
-				typename M::CVertex* new_v = m_pMesh->createVertex(m_pMesh->numVertices() + 1);
+				// 在新网格中创建顶点，坐标为插值得到的原始3D坐标
+				int vid = i * (density + 1) + j + 1;
+				typename M::CVertex* new_v = new_mesh->createVertex(vid);
 				new_v->point() = interpolated_3d;
 				grid_vertices[i][j] = new_v;
 			}
 		}
 		
-		// 创建四边形面片
+		// 在新网格中创建四边形面片
+		int fid = 1;
 		for (int i = 0; i < density; ++i)
 		{
 			for (int j = 0; j < density; ++j)
@@ -488,12 +493,14 @@ namespace MeshLib
 				quad_verts.push_back(grid_vertices[i + 1][j + 1]);
 				quad_verts.push_back(grid_vertices[i][j + 1]);
 				
-				m_pMesh->createFace(quad_verts, m_pMesh->numFaces() + 1);
+				new_mesh->createFace(quad_verts, fid++);
 			}
 		}
 		
-		m_pMesh->labelBoundary();
+		new_mesh->labelBoundary();
 		std::cout << "Quad remesh completed with " << density << "x" << density << " quads." << std::endl;
+		
+		return new_mesh;
 	}
 }
 #endif
