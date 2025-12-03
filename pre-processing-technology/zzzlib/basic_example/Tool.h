@@ -28,6 +28,7 @@ namespace MeshLib
 		void bilinear_gen(CPoint p1, CPoint p2, CPoint p3, CPoint p4);
 		void harmonic_map(int max_iter = 5000, double tol = 1e-6);
 		void harmonic_map_square(int max_iter = 5000, double tol = 1e-6);
+		void quad_remesh_from_square(int density = 20);
 
 	protected:
 		typename M *m_pMesh;
@@ -257,6 +258,16 @@ namespace MeshLib
 			return;
 		}
 
+		// 保存所有顶点的原始3D坐标到uv属性（uv.x, uv.y存储原x,y，通过string存储z）
+		for (typename M::MeshVertexIterator mv(m_pMesh); !mv.end(); mv++)
+		{
+			auto v = mv.value();
+			CPoint original = v->point();
+			v->uv() = CPoint2(original[0], original[1]);
+			// 将z坐标存储到顶点的trait中
+			v->string() = std::to_string(original[2]);
+		}
+
 		// 收集边界顶点顺序及边长
 		std::vector<typename M::CVertex *> bverts;
 		bverts.reserve(hes.size());
@@ -383,6 +394,106 @@ namespace MeshLib
 				break;
 			}
 		}
+	}
+
+	template <typename M>
+	void CTool<M>::quad_remesh_from_square(int density)
+	{
+		// m_pMesh是已经过正方形调和映射的网格，顶点的point是2D坐标
+		// 原始3D坐标保存在uv属性和string中
+		
+		// 收集当前所有面片（2D参数域中的三角形）
+		std::vector<typename M::CFace*> original_faces;
+		for (typename M::MeshFaceIterator mf(m_pMesh); !mf.end(); mf++)
+		{
+			original_faces.push_back(mf.value());
+		}
+		
+		// 在正方形参数域 [-1,1]×[-1,1] 上生成规则网格点
+		std::vector<std::vector<typename M::CVertex*>> grid_vertices(density + 1);
+		for (int i = 0; i <= density; ++i)
+		{
+			grid_vertices[i].resize(density + 1);
+		}
+		
+		// 生成网格点并通过重心坐标插值计算3D坐标
+		for (int i = 0; i <= density; ++i)
+		{
+			double u = -1.0 + 2.0 * i / (double)density;
+			for (int j = 0; j <= density; ++j)
+			{
+				double v = -1.0 + 2.0 * j / (double)density;
+				CPoint param_point(u, v, 0.0);
+				
+				// 在原始2D参数网格中找到包含这个点的三角形
+				bool found = false;
+				CPoint interpolated_3d;
+				
+				for (auto f : original_faces)
+				{
+					typename M::CHalfEdge* he = m_pMesh->faceHalfedge(f);
+					
+					typename M::CVertex* v0 = m_pMesh->halfedgeTarget(he);
+					typename M::CVertex* v1 = m_pMesh->halfedgeTarget(m_pMesh->halfedgeNext(he));
+					typename M::CVertex* v2 = m_pMesh->halfedgeTarget(m_pMesh->halfedgeNext(m_pMesh->halfedgeNext(he)));
+					
+					CPoint p0 = v0->point();
+					CPoint p1 = v1->point();
+					CPoint p2 = v2->point();
+					
+					// 计算重心坐标
+					double det = (p1[1] - p2[1]) * (p0[0] - p2[0]) + (p2[0] - p1[0]) * (p0[1] - p2[1]);
+					if (fabs(det) < 1e-10) continue;
+					
+					double lambda1 = ((p1[1] - p2[1]) * (param_point[0] - p2[0]) + (p2[0] - p1[0]) * (param_point[1] - p2[1])) / det;
+					double lambda2 = ((p2[1] - p0[1]) * (param_point[0] - p2[0]) + (p0[0] - p2[0]) * (param_point[1] - p2[1])) / det;
+					double lambda3 = 1.0 - lambda1 - lambda2;
+					
+					// 检查点是否在三角形内（允许小的数值误差）
+					if (lambda1 >= -1e-6 && lambda2 >= -1e-6 && lambda3 >= -1e-6)
+					{
+						// 使用重心坐标插值原始3D坐标
+						// 从uv和string中恢复原始3D坐标
+						CPoint orig0(v0->uv()[0], v0->uv()[1], std::stof(v0->string()));
+						CPoint orig1(v1->uv()[0], v1->uv()[1], std::stof(v1->string()));
+						CPoint orig2(v2->uv()[0], v2->uv()[1], std::stof(v2->string()));
+						
+						interpolated_3d = orig0 * lambda1 + orig1 * lambda2 + orig2 * lambda3;
+						found = true;
+						break;
+					}
+				}
+				
+				if (!found)
+				{
+					std::cerr << "Warning: Could not find containing face for point (" << u << ", " << v << ")" << std::endl;
+					interpolated_3d = param_point; // 使用参数坐标作为默认值
+				}
+				
+				// 创建新顶点，坐标为插值得到的原始3D坐标
+				typename M::CVertex* new_v = m_pMesh->createVertex(m_pMesh->numVertices() + 1);
+				new_v->point() = interpolated_3d;
+				grid_vertices[i][j] = new_v;
+			}
+		}
+		
+		// 创建四边形面片
+		for (int i = 0; i < density; ++i)
+		{
+			for (int j = 0; j < density; ++j)
+			{
+				std::vector<typename M::CVertex*> quad_verts;
+				quad_verts.push_back(grid_vertices[i][j]);
+				quad_verts.push_back(grid_vertices[i + 1][j]);
+				quad_verts.push_back(grid_vertices[i + 1][j + 1]);
+				quad_verts.push_back(grid_vertices[i][j + 1]);
+				
+				m_pMesh->createFace(quad_verts, m_pMesh->numFaces() + 1);
+			}
+		}
+		
+		m_pMesh->labelBoundary();
+		std::cout << "Quad remesh completed with " << density << "x" << density << " quads." << std::endl;
 	}
 }
 #endif
