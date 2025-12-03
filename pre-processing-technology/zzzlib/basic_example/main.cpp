@@ -12,7 +12,7 @@ void main(int argc, char **argv)
 	mesh.read_m(argv[1]);
 	CTool<CTMesh> tool(&mesh);
 	tool.harmonic_map_square();
-	CTMesh *quad_mesh = tool.quad_remesh_from_square();
+	CTMesh *quad_mesh = tool.quad_remesh_from_square(40);
 	CTool<CTMesh> quad_tool(quad_mesh);
 	tool._change_color();
 	quad_tool._change_color();
