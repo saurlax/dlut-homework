@@ -9,9 +9,9 @@ using namespace MeshLib;
 void main(int argc, char **argv)
 {
 	CTMesh mesh;
+	mesh.read_m(argv[1]);
 	CTool<CTMesh> tool(&mesh);
-	tool.bilinear_gen(CPoint(0, 0, 1), CPoint(3, 1, 4), CPoint(-3, 1, 5), CPoint(-4, 2, 4));
-	tool.harmonic_map();
+	tool.harmonic_map_square();
 	tool._change_color();
 
 	mesh.write_m(argv[2]);
