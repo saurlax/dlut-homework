@@ -294,38 +294,96 @@ namespace MeshLib
 		// 将周长均分为4段，分别对应正方形的4条边
 		double side_length = perimeter / 4.0;
 		double acc = 0.0;
+		
+		// 找到四个角点对应的边界顶点索引
+		std::vector<int> corner_indices;
+		double temp_acc = 0.0;
+		for (int corner = 0; corner < 4; ++corner)
+		{
+			double target_length = corner * side_length;
+			temp_acc = 0.0;
+			for (size_t i = 0; i < bverts.size(); ++i)
+			{
+				if (temp_acc >= target_length - 1e-9)
+				{
+					corner_indices.push_back(i);
+					break;
+				}
+				if (i > 0)
+					temp_acc += seg_len[i - 1];
+			}
+		}
+		
+		// 确保有4个角点
+		if (corner_indices.size() < 4)
+		{
+			corner_indices.resize(4);
+			corner_indices[0] = 0;
+			corner_indices[1] = bverts.size() / 4;
+			corner_indices[2] = bverts.size() / 2;
+			corner_indices[3] = bverts.size() * 3 / 4;
+		}
+		
+		// 映射边界顶点到正方形的四条边
 		for (size_t i = 0; i < bverts.size(); ++i)
 		{
-			if (i > 0)
-				acc += seg_len[i - 1];
-			
-			double t = acc / perimeter; // 归一化位置 [0,1)
 			double x, y;
 			
-			// 将 [0,1) 的位置映射到正方形的4条边
-			if (t < 0.25) // 底边: 从(-1,-1)到(1,-1)
+			if (i < corner_indices[1]) // 底边: 从(-1,-1)到(1,-1)
 			{
-				double s = t / 0.25;
-				x = -1.0 + 2.0 * s;
-				y = -1.0;
+				if (corner_indices[1] > corner_indices[0])
+				{
+					double t = double(i - corner_indices[0]) / double(corner_indices[1] - corner_indices[0]);
+					x = -1.0 + 2.0 * t;
+					y = -1.0;
+				}
+				else
+				{
+					x = -1.0;
+					y = -1.0;
+				}
 			}
-			else if (t < 0.5) // 右边: 从(1,-1)到(1,1)
+			else if (i < corner_indices[2]) // 右边: 从(1,-1)到(1,1)
 			{
-				double s = (t - 0.25) / 0.25;
-				x = 1.0;
-				y = -1.0 + 2.0 * s;
+				if (corner_indices[2] > corner_indices[1])
+				{
+					double t = double(i - corner_indices[1]) / double(corner_indices[2] - corner_indices[1]);
+					x = 1.0;
+					y = -1.0 + 2.0 * t;
+				}
+				else
+				{
+					x = 1.0;
+					y = -1.0;
+				}
 			}
-			else if (t < 0.75) // 上边: 从(1,1)到(-1,1)
+			else if (i < corner_indices[3]) // 上边: 从(1,1)到(-1,1)
 			{
-				double s = (t - 0.5) / 0.25;
-				x = 1.0 - 2.0 * s;
-				y = 1.0;
+				if (corner_indices[3] > corner_indices[2])
+				{
+					double t = double(i - corner_indices[2]) / double(corner_indices[3] - corner_indices[2]);
+					x = 1.0 - 2.0 * t;
+					y = 1.0;
+				}
+				else
+				{
+					x = 1.0;
+					y = 1.0;
+				}
 			}
 			else // 左边: 从(-1,1)到(-1,-1)
 			{
-				double s = (t - 0.75) / 0.25;
-				x = -1.0;
-				y = 1.0 - 2.0 * s;
+				if (bverts.size() > corner_indices[3])
+				{
+					double t = double(i - corner_indices[3]) / double(bverts.size() - corner_indices[3]);
+					x = -1.0;
+					y = 1.0 - 2.0 * t;
+				}
+				else
+				{
+					x = -1.0;
+					y = 1.0;
+				}
 			}
 			
 			bverts[i]->point() = CPoint(x, y, 0.0);
