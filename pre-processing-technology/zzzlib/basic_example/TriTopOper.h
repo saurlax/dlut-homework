@@ -21,6 +21,7 @@ namespace MeshLib
 		typename M::CVertex *addVertexFaceBoundary(typename M::CHalfEdge *phe);
 		typename M::CHalfEdge *addFace2Boundary(typename M::CHalfEdge *phe);
 		void swapEdge(typename M::CEdge *pEdge);
+		void generalEdgeSwap(typename M::CEdge *edge, typename M::CVertex *v1, typename M::CVertex *v2);
 
 	protected:
 		void _update_vertex_edges(typename M::CVertex *pVertex);
@@ -272,61 +273,232 @@ namespace MeshLib
 		ph[5] = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(ph[4]));
 
 		M::CVertex *pv[4];
+		pv[0] = v1;																												 // 原边端点1
+		pv[1] = v2;																												 // 原边端点2
+		pv[2] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[1])); // 左三角形第三个顶点
+		pv[3] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[4])); // 右三角形第三个顶点
 
-		pv[0] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[0]));
-		pv[1] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[1]));
-		pv[2] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[2]));
-		pv[3] = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(ph[4]));
-
-		int pi[6];
-		M::CEdge *ppe[6];
-
-		for (int i = 0; i < 6; i++)
+		// 检查是否会产生重边
+		if (pv[2] == pv[3])
 		{
-			M::CHalfEdge *he = ph[i];
-			M::CEdge *e = static_cast<M::CEdge *>(m_pMesh->halfedgeEdge(he));
-			ppe[i] = e;
+			std::cerr << "Error: Edge swap would create degenerate triangle" << std::endl;
+			return;
+		}
 
-			if (ppe[i]->halfedge(0) == he)
+		// 交换后的边连接 v3 和 v4
+
+		// 修改半边的目标顶点（target vertex）
+		// 左三角形：v3 -> v4 -> v1
+		ph[0]->target() = pv[3];
+		ph[0]->target() = pv[3]; // v3 -> v4
+		ph[1]->target() = pv[0]; // v4 -> v1
+		ph[2]->target() = pv[2]; // v1 -> v3
+
+		ph[3]->target() = pv[2]; // v4 -> v3
+		ph[4]->target() = pv[1]; // v3 -> v2
+		ph[5]->target() = pv[3]; // v2 -> v4
+
+		// 更新顶点的半边指针，确保每个顶点都指向一个以它为source的有效半边
+		// 需要检查原来的半边指针是否仍然有效
+		if (pv[0]->halfedge() == ph[0] || pv[0]->halfedge() == ph[3])
+		{
+			pv[0]->halfedge() = ph[1]; // v1的出边
+		}
+		if (pv[1]->halfedge() == ph[0] || pv[1]->halfedge() == ph[3])
+		{
+			pv[1]->halfedge() = ph[4]; // v2的出边
+		}
+		if (pv[2]->halfedge() == NULL || pv[2]->halfedge()->target() != pv[2])
+		{
+			pv[2]->halfedge() = ph[0]; // v3的出边（交换后的边）
+		}
+		if (pv[3]->halfedge() == NULL || pv[3]->halfedge()->target() != pv[3])
+		{
+			pv[3]->halfedge() = ph[3]; // v4的出边（交换后的边）
+		}
+	}
+
+	template <typename M>
+	void CTriTopOper<M>::generalEdgeSwap(typename M::CEdge *edge, typename M::CVertex *v1, typename M::CVertex *v2)
+	{
+		// 通用多边形边交换方法
+		// edge: 要交换的边
+		// v1, v2: 交换后边的两个端点
+
+		// 获取边的两个半边
+		M::CHalfEdge *he_left = static_cast<M::CHalfEdge *>(edge->halfedge(0));
+		M::CHalfEdge *he_right = static_cast<M::CHalfEdge *>(edge->halfedge(1));
+
+		// 边界检查
+		if (he_right == NULL)
+		{
+			std::cerr << "Error: Cannot swap boundary edge" << std::endl;
+			return;
+		}
+
+		if (v1 == NULL || v2 == NULL)
+		{
+			std::cerr << "Error: Invalid vertices" << std::endl;
+			return;
+		}
+
+		if (v1 == v2)
+		{
+			std::cerr << "Error: Cannot swap edge to same vertex" << std::endl;
+			return;
+		}
+
+		// 获取左侧面的所有半边
+		std::vector<M::CHalfEdge *> left_halfedges;
+		M::CHalfEdge *h = he_left;
+		M::CFace *left_face = static_cast<M::CFace *>(h->face());
+		do
+		{
+			left_halfedges.push_back(h);
+			h = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(h));
+		} while (h != he_left);
+
+		// 获取右侧面的所有半边
+		std::vector<M::CHalfEdge *> right_halfedges;
+		h = he_right;
+		M::CFace *right_face = static_cast<M::CFace *>(h->face());
+		do
+		{
+			right_halfedges.push_back(h);
+			h = static_cast<M::CHalfEdge *>(m_pMesh->faceNextCcwHalfEdge(h));
+		} while (h != he_right);
+
+		// 验证v1和v2是否在相邻的两个多边形中
+		bool v1_in_left = false, v1_in_right = false;
+		bool v2_in_left = false, v2_in_right = false;
+
+		for (size_t i = 0; i < left_halfedges.size(); i++)
+		{
+			M::CVertex *v = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(left_halfedges[i]));
+			if (v == v1)
+				v1_in_left = true;
+			if (v == v2)
+				v2_in_left = true;
+		}
+
+		for (size_t i = 0; i < right_halfedges.size(); i++)
+		{
+			M::CVertex *v = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(right_halfedges[i]));
+			if (v == v1)
+				v1_in_right = true;
+			if (v == v2)
+				v2_in_right = true;
+		}
+
+		// v1和v2必须分别在两个面中，且不能同时在同一个面
+		if (!((v1_in_left && v2_in_right) || (v1_in_right && v2_in_left)))
+		{
+			std::cerr << "Error: Vertices must be in adjacent polygons" << std::endl;
+			return;
+		}
+
+		// 找到v1和v2对应的半边位置
+		int v1_idx = -1, v2_idx = -1;
+		std::vector<M::CHalfEdge *> *v1_face_hes, *v2_face_hes;
+
+		if (v1_in_left)
+		{
+			v1_face_hes = &left_halfedges;
+			for (size_t i = 0; i < left_halfedges.size(); i++)
 			{
-				pi[i] = 0;
+				if (m_pMesh->halfedgeTarget(left_halfedges[i]) == v1)
+				{
+					v1_idx = i;
+					break;
+				}
 			}
-			else
+		}
+		else
+		{
+			v1_face_hes = &right_halfedges;
+			for (size_t i = 0; i < right_halfedges.size(); i++)
 			{
-				assert(ppe[i]->halfedge(1) == he);
-				pi[i] = 1;
+				if (m_pMesh->halfedgeTarget(right_halfedges[i]) == v1)
+				{
+					v1_idx = i;
+					break;
+				}
 			}
 		}
 
-		// relink the vertices and halfedge
-
-		ph[0]->target() = pv[1];
-		ph[1]->target() = pv[2];
-		ph[2]->target() = pv[3];
-		ph[3]->target() = pv[3];
-		ph[4]->target() = pv[0];
-		ph[5]->target() = pv[1];
-
-		for (int i = 0; i < 6; i++)
+		if (v2_in_left)
 		{
-			M::CHalfEdge *h = ph[i];
-			M::CVertex *v = static_cast<M::CVertex *>(m_pMesh->halfedgeTarget(h));
-			v->halfedge() = h;
+			v2_face_hes = &left_halfedges;
+			for (size_t i = 0; i < left_halfedges.size(); i++)
+			{
+				if (m_pMesh->halfedgeTarget(left_halfedges[i]) == v2)
+				{
+					v2_idx = i;
+					break;
+				}
+			}
+		}
+		else
+		{
+			v2_face_hes = &right_halfedges;
+			for (size_t i = 0; i < right_halfedges.size(); i++)
+			{
+				if (m_pMesh->halfedgeTarget(right_halfedges[i]) == v2)
+				{
+					v2_idx = i;
+					break;
+				}
+			}
 		}
 
-		// relink the edge-halfedge pointers
+		if (v1_idx == -1 || v2_idx == -1)
+		{
+			std::cerr << "Error: Cannot find vertices in faces" << std::endl;
+			return;
+		}
 
-		ph[1]->edge() = ppe[2];
-		ppe[2]->halfedge(pi[2]) = ph[1];
+		// 交换边：将边的两个半边重新定向到v1和v2
+		// 通过修改半边的target指针实现
+		he_left->target() = (v1_in_left ? v2 : v1);
+		he_right->target() = (v1_in_left ? v1 : v2);
 
-		ph[2]->edge() = ppe[4];
-		ppe[4]->halfedge(pi[4]) = ph[2];
+		// 更新v1和v2的半边指针
+		v1->halfedge() = (v1_in_left ? he_right : he_left);
+		v2->halfedge() = (v1_in_left ? he_left : he_right);
 
-		ph[4]->edge() = ppe[5];
-		ppe[5]->halfedge(pi[5]) = ph[4];
+		// 更新原来的边端点的半边指针（如果它们指向了被交换的边）
+		M::CVertex *old_v1 = static_cast<M::CVertex *>(m_pMesh->edgeVertex1(edge));
+		M::CVertex *old_v2 = static_cast<M::CVertex *>(m_pMesh->edgeVertex2(edge));
 
-		ph[5]->edge() = ppe[1];
-		ppe[1]->halfedge(pi[1]) = ph[5];
+		if (old_v1 != v1 && old_v1 != v2)
+		{
+			// 找到old_v1的一个有效出边
+			for (size_t i = 0; i < left_halfedges.size(); i++)
+			{
+				M::CVertex *src = static_cast<M::CVertex *>(
+						m_pMesh->halfedgeTarget(m_pMesh->halfedgePrev(left_halfedges[i])));
+				if (src == old_v1 && left_halfedges[i] != he_left)
+				{
+					old_v1->halfedge() = left_halfedges[i];
+					break;
+				}
+			}
+		}
+
+		if (old_v2 != v1 && old_v2 != v2)
+		{
+			// 找到old_v2的一个有效出边
+			for (size_t i = 0; i < right_halfedges.size(); i++)
+			{
+				M::CVertex *src = static_cast<M::CVertex *>(
+						m_pMesh->halfedgeTarget(m_pMesh->halfedgePrev(right_halfedges[i])));
+				if (src == old_v2 && right_halfedges[i] != he_right)
+				{
+					old_v2->halfedge() = right_halfedges[i];
+					break;
+				}
+			}
+		}
 	}
 
 	template <typename M>
